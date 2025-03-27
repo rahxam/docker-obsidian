@@ -1,0 +1,47 @@
+services:
+  couchdb:
+    networks:
+      - traefik
+    deploy:
+      labels:
+        - "traefik.enable=true"
+        - "traefik.stack.network=traefik"  
+
+        - "traefik.http.routers.obsidian.rule=Host(`obsidian.hartig.es`)"
+        - "traefik.http.routers.obsidian.entrypoints=https"
+        - "traefik.http.routers.obsidian.tls=true"
+        - "traefik.http.services.obsidian.loadbalancer.server.port=443"
+        - "traefik.http.routers.obsidian.middlewares=obsidiancors"
+        # The part needed for CORS to work on Traefik 2.x starts here
+        - "traefik.http.middlewares.obsidiancors.headers.accesscontrolallowmethods=GET,PUT,POST,HEAD,DELETE"
+        - "traefik.http.middlewares.obsidiancors.headers.accesscontrolallowheaders=accept,authorization,content-type,origin,referer"
+        - "traefik.http.middlewares.obsidiancors.headers.accesscontrolalloworiginlist=app://obsidian.md,capacitor://localhost,http://localhost"
+        - "traefik.http.middlewares.obsidiancors.headers.accesscontrolmaxage=3600"
+        - "traefik.http.middlewares.obsidiancors.headers.addvaryheader=true"
+        - "traefik.http.middlewares.obsidiancors.headers.accessControlAllowCredentials=true"
+        
+        - "traefik.constraint=proxy-public"
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.database == true
+    image: couchdb
+    volumes:
+        - 'couchdb-etc:/opt/couchdb/etc/local.d'
+        - 'couchdb-data:/opt/couchdb/data'
+    environment:
+        - 'COUCHDB_PASSWORD=jdsjkasdihsadiusadksadhkjdsauisad'
+        - 'COUCHDB_USER=asdkjsadhkjsahdkjsahdsakjdhkjhurier'
+
+
+networks:
+  traefik:
+    external: true
+volumes:
+  couchdb-etc:
+    driver: local
+  couchdb-data:
+    driver: local
